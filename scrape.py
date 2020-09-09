@@ -61,10 +61,13 @@ def main():
         print("_ID: " + i.id)
         print("_TIME: " + utc_to_local(i.created_utc))
         print("_TITLE: " + i.title)
-        print("_TEXT: " + i.selftext + "\n")
-        print("_TOP_LEVEL_COMMENTS: ") 
-        print(generate_comments(i.id))
-        print("**********************************\n")
+        try: print("_TEXT: " + i.selftext + "\n")
+        except:
+            continue
+        #print("_TOP_LEVEL_COMMENTS: ") 
+        #print(generate_comments(i.id))
+        print("###\n")
 
 
-main()
+if __name__ == "__main__":
+    main()
