@@ -56,14 +56,14 @@ def generate_comments(submission_id):
 
 def init_db():
     conn = db.create_connection(r"./corpus.db")
-    create_table(conn)
+    db.create_table(conn)
 
 
 def main():
     init_log()
     gen = generate_submissions()
     init_db()
-
+    
     # we want..
     # i.author
     # i.created_utc
@@ -74,8 +74,15 @@ def main():
     # i.retrieved_on
     # i.num_comments
     # i.permalink
-    """
+    
     for i in list(gen):
+        try: 
+            submission = (i.author, i.created_utc, i.title, i.selftext, i.id, 
+                    i.is_self, i.retrieved_on, i.num_comments, i.permalink)
+            db.insert(conn, submission)
+        except:
+            continue
+
         print("_AUTHOR: " + i.author)
         print("_ID: " + i.id)
         print("_TIME: " + utc_to_local(i.created_utc))
@@ -86,7 +93,7 @@ def main():
         #print("_TOP_LEVEL_COMMENTS: ") 
         #print(generate_comments(i.id))
         print("###\n")
-        """
+        
 
 
 if __name__ == "__main__":

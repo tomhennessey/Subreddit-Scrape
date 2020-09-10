@@ -20,7 +20,7 @@ def create_table(conn):
     """ create a table from the create_table_sql statement
     """
     create_table_sql = """ CREATE TABLE IF NOT EXISTS submissions (
-                                        id integer PRIMARY KEY,
+                                        prim_key integer PRIMARY KEY,
                                         author text NOT NULL,
                                         created_utc integer NOT NULL,
                                         title text NOT NULL,
@@ -37,6 +37,16 @@ def create_table(conn):
     except Error as e:
         print(e)
 
+def insert(conn, submission):
+    sql = ''' INSERT INTO submissions(author, created_utc_integer, 
+                                title, selftext, id, is_self, 
+                                retrieved_on, num_comments)
+                                VALUES(?,?,?,?,?,?,?,?)
+                                '''
+    cur = conn.cursor()
+    cur.execute(sql, submission)
+    conn.commit()
+    return cur.lastrowid
 
 """
 TABLE1 submissions: 
