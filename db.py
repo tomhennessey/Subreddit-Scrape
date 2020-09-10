@@ -10,14 +10,27 @@ def create_connection(db_file):
     conn = None
     try:
         conn = sqlite3.connect(db_file)
+        print("Connected to SQLite DB")
         return conn
     except Error as e:
         print(e)
 
 
-def create_table(conn, create_table_sql):
+def create_table(conn):
     """ create a table from the create_table_sql statement
     """
+    create_table_sql = """ CREATE TABLE IF NOT EXISTS submissions (
+                                        id integer PRIMARY KEY,
+                                        author text NOT NULL,
+                                        created_utc integer NOT NULL,
+                                        title text NOT NULL,
+                                        selftext text,
+                                        id text NOT NULL,
+                                        is_self integer NOT NULL,
+                                        retrieved_on integer NOT NULL,
+                                        num_comments integer NOT NULL
+                                    ); """
+
     try:
         c = conn.cursor()
         c.execute(create_table_sql)
@@ -26,7 +39,7 @@ def create_table(conn, create_table_sql):
 
 
 """
-TABLE1: 
+TABLE1 submissions: 
     author
     created_utc
     title
@@ -35,32 +48,34 @@ TABLE1:
     is_self
     retrieved_on
     num_comments
-    retireved_on
 
-TABLE2:
+TABLE2 comments:
 
 """
 
 def main():
     database = r"./corpus.db"
 
-    sql_create_projects_table = """ CREATE TABLE IF NOT EXISTS projects (
+    sql_create_projects_table = """ CREATE TABLE IF NOT EXISTS submissions (
                                         id integer PRIMARY KEY,
-                                        name text NOT NULL,
-                                        begin_date text,
-                                        end_date text
+                                        author text NOT NULL,
+                                        created_utc integer NOT NULL,
+                                        title text NOT NULL,
+                                        selftext text,
+                                        id text NOT NULL,
+                                        is_self integer NOT NULL,
+                                        retrieved_on integer NOT NULL,
+                                        num_comments integer NOT NULL
                                     ); """
 
-    sql_create_tasks_table = """ CREATE TABLE IF NOT EXISTS task (
+    """sql_create_tasks_table = CREATE TABLE IF NOT EXISTS task (
                                 id integer PRIMARY KEY,
                                 name text NOT NULL,
                                 priority integer,
                                 status_id integer 
 
-
+"""
 
 if __name__ == "__main__":
     create_connection("./corpus.db")
 
-
-`

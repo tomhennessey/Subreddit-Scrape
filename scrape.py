@@ -4,7 +4,8 @@ import praw
 from psaw import PushshiftAPI
 import datetime as dt
 import logging
-import json
+
+import db
 
 # initialize verbose logging
 def init_log():
@@ -53,9 +54,15 @@ def generate_comments(submission_id):
         print("_com" + str(index) + ": " + top_level_comment.body)
     return
 
+def init_db():
+    conn = db.create_connection(r"./corpus.db")
+    create_table(conn)
+
+
 def main():
     init_log()
     gen = generate_submissions()
+    init_db()
 
     # we want..
     # i.author
@@ -67,6 +74,7 @@ def main():
     # i.retrieved_on
     # i.num_comments
     # i.permalink
+    """
     for i in list(gen):
         print("_AUTHOR: " + i.author)
         print("_ID: " + i.id)
@@ -78,6 +86,7 @@ def main():
         #print("_TOP_LEVEL_COMMENTS: ") 
         #print(generate_comments(i.id))
         print("###\n")
+        """
 
 
 if __name__ == "__main__":
