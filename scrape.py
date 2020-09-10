@@ -56,6 +56,17 @@ def generate_comments(submission_id):
 def main():
     init_log()
     gen = generate_submissions()
+
+    # we want..
+    # i.author
+    # i.created_utc
+    # i.title
+    # i.selftext (if exists)
+    # i.id
+    # i.is_self
+    # i.retrieved_on
+    # i.num_comments
+    # i.permalink
     for i in list(gen):
         print("_AUTHOR: " + i.author)
         print("_ID: " + i.id)
