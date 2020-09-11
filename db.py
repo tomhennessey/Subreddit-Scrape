@@ -16,9 +16,7 @@ def create_connection(db_file):
         print(e)
 
 
-def create_table(conn):
-    """ create a table from the create_table_sql statement
-    """
+def create_table_submissions(conn):
     create_table_sql = """ CREATE TABLE IF NOT EXISTS submissions (
                                         prim_key integer PRIMARY KEY,
                                         author text NOT NULL,
@@ -37,7 +35,22 @@ def create_table(conn):
     except Error as e:
         print(e)
 
-def insert(conn, submission):
+def create_table_comments(conn):
+    create_table_sql = """ CREATE TABLE IF NOT EXISTS comments (
+                                        prim_key integer PRIMARY KEY,
+                                        author text NOT NULL,
+                                        created_utc text NOT NULL,
+                                        id text NOT NULL,
+                                        body text NOT NULL,
+                                        parent text NOT NULL
+                                        ); """
+    try:
+        c = conn.cursor()
+        c.execute(create_table_sql)
+    except Error as e:
+        print(e)
+
+def insert_submission(conn, submission):
     sql = ''' INSERT INTO submissions(author, created_utc, title, selftext, id, is_self, retrieved_on,
                                 num_comments, permalink)
                                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -47,44 +60,14 @@ def insert(conn, submission):
     conn.commit()
     return cur.lastrowid
 
-"""
-TABLE1 submissions: 
-    author
-    created_utc
-    title
-    selftext
-    id
-    is_self
-    retrieved_on
-    num_comments
+def insert_comment(conn, comment):
+    sql = ''' INSERT INTO comments(author, created_utc, id, body, parent)
+                            VALUES(?, ?, ?, ?, ?)
+                            '''
+    cur = conn.cursor()
+    cur.execute(sql, comment)
+    conn.commit()
+    return cur.lastrowid
 
-TABLE2 comments:
 
-"""
-
-def main():
-    database = r"./corpus.db"
-
-    sql_create_projects_table = """ CREATE TABLE IF NOT EXISTS submissions (
-                                        id integer PRIMARY KEY,
-                                        author text NOT NULL,
-                                        created_utc text NOT NULL,
-                                        title text NOT NULL,
-                                        selftext text,
-                                        id text NOT NULL,
-                                        is_self integer NOT NULL,
-                                        retrieved_on text NOT NULL,
-                                        num_comments integer NOT NULL
-                                    ); """
-
-    """sql_create_tasks_table = CREATE TABLE IF NOT EXISTS task (
-                                id integer PRIMARY KEY,
-                                name text NOT NULL,
-                                priority integer,
-                                status_id integer 
-
-"""
-
-if __name__ == "__main__":
-    create_connection("./corpus.db")
 
