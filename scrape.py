@@ -5,6 +5,7 @@ from psaw import PushshiftAPI
 import datetime as dt
 import logging
 import time
+import os
 
 import db
 
@@ -62,10 +63,6 @@ def generate_comments(reddit, submission_id):
 
 # timer to keep track of praw api requests
 def praw_timer(reddit):
-    #print("", end=" ")
-    print("                               PRAW requests remaining: ", end="") 
-    print(reddit.auth.limits['remaining'], end="")
-    print("\r", end="")
     if reddit.auth.limits['remaining'] < 15:
         print("Sleeping for 60 seconds to reset limit")
         time.sleep(60)
@@ -75,8 +72,12 @@ def init_db():
     conn = db.create_connection(r"./corpus.db")
     db.create_table_submissions(conn)
     db.create_table_comments(conn)
-    print("Success")
+    print("DB Init Success")
     return conn
+
+# clear terminal screen in windows or unix
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def main():
     #init_log()
@@ -104,11 +105,21 @@ def main():
                         comments = generate_comments(reddit, i.id)
                         praw_timer(reddit)
                         for ind, j in enumerate(list(comments)):
-                            comment = (str(j.author), str(utc_to_local(j.created_utc)), 
-                                    str(j.id), str(j.body), str(i.id))  
-                            db.insert_comment(conn, comment)
-                        print("", end =" ")
-                        print(inx, utc_to_local(i.created_utc), end="\r")
+                            try:
+                                comment = (str(j.author), str(utc_to_local(j.created_utc)), 
+                                        str(j.id), str(j.body), str(i.id))  
+                                db.insert_comment(conn, comment)
+                            except AttributeError as e:
+                                print(e)
+                                continue
+                        clear_screen()
+                        print("PRAW requests remaining: ", end="") 
+                        print(reddit.auth.limits['remaining'])
+                        print("At submission index ", end="")
+                        print(inx)                        
+                        print(" of current month - ")
+                        print(utc_to_local(i.created_utc))
+
 
 
 if __name__ == "__main__":
