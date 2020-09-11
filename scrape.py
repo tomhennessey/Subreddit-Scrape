@@ -4,6 +4,7 @@ import praw
 from psaw import PushshiftAPI
 import datetime as dt
 import logging
+import time
 
 import db
 
@@ -31,7 +32,7 @@ def generate_submissions():
     
     # Pushapi says they have 32888 submissions in this time period, 
     # hence the limit
-    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit='teachers', limit=4000000))
+    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit='teachers', limit=40000))
 
 # takes a generated psaw object to start praw api
 # matches submission id's from psaw to find associated comments 
@@ -65,7 +66,8 @@ def main():
     gen = generate_submissions()
     conn = init_db()
 
-    for i in list(gen):
+    for inx, i in enumerate(list(gen)):
+        time.sleep(0.05)
         # only get submission that are self posts
         if hasattr(i, 'selftext'):
             if hasattr(i, 'author'):
@@ -77,7 +79,7 @@ def main():
                         i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
                         i.num_comments, i.permalink)
             db.insert(conn, submission)
-            print(utc_to_local(i.created_utc))
+            print(inx, utc_to_local(i.created_utc))
 
 
 if __name__ == "__main__":
