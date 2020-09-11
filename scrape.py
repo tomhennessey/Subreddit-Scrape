@@ -64,8 +64,8 @@ def generate_comments(reddit, submission_id):
 # timer to keep track of praw api requests
 def praw_timer(reddit):
     if reddit.auth.limits['remaining'] < 15:
-        print("Sleeping for 60 seconds to reset limit")
-        time.sleep(60)
+        print("Waiting for PRAW API limit to reset...")
+        time.sleep(4)
 
 # create submissions and ocmments tables in SQLite DB
 def init_db():
@@ -84,7 +84,7 @@ def main():
     reddit = praw.Reddit("bot1")
     conn = init_db()
 
-    for month in range(1, 12):
+    for month in range(1, 10):
         for half in range (1, 3):
             gen = generate_submissions_psaw(month, half)
 
