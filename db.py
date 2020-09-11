@@ -22,15 +22,15 @@ def create_table(conn):
     create_table_sql = """ CREATE TABLE IF NOT EXISTS submissions (
                                         prim_key integer PRIMARY KEY,
                                         author text NOT NULL,
-                                        created_utc integer NOT NULL,
+                                        created_utc text NOT NULL,
                                         title text NOT NULL,
                                         selftext text,
                                         id text NOT NULL,
                                         is_self integer NOT NULL,
-                                        retrieved_on integer NOT NULL,
-                                        num_comments integer NOT NULL
-                                    ); """
-
+                                        retrieved_on text NOT NULL,
+                                        num_comments integer NOT NULL,
+                                        permalink text NOT NULL
+                                        ); """
     try:
         c = conn.cursor()
         c.execute(create_table_sql)
@@ -38,10 +38,9 @@ def create_table(conn):
         print(e)
 
 def insert(conn, submission):
-    sql = ''' INSERT INTO submissions(author, created_utc_integer, 
-                                title, selftext, id, is_self, 
-                                retrieved_on, num_comments)
-                                VALUES(?,?,?,?,?,?,?,?)
+    sql = ''' INSERT INTO submissions(author, created_utc, title, selftext, id, is_self, retrieved_on,
+                                num_comments, permalink)
+                                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
                                 '''
     cur = conn.cursor()
     cur.execute(sql, submission)
@@ -69,12 +68,12 @@ def main():
     sql_create_projects_table = """ CREATE TABLE IF NOT EXISTS submissions (
                                         id integer PRIMARY KEY,
                                         author text NOT NULL,
-                                        created_utc integer NOT NULL,
+                                        created_utc text NOT NULL,
                                         title text NOT NULL,
                                         selftext text,
                                         id text NOT NULL,
                                         is_self integer NOT NULL,
-                                        retrieved_on integer NOT NULL,
+                                        retrieved_on text NOT NULL,
                                         num_comments integer NOT NULL
                                     ); """
 

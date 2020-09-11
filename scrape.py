@@ -31,7 +31,7 @@ def generate_submissions():
     
     # Pushapi says they have 32888 submissions in this time period, 
     # hence the limit
-    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit='teachers', limit=32888))
+    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit='teachers', limit=4000000))
 
 # takes a generated psaw object to start praw api
 # matches submission id's from psaw to find associated comments 
@@ -57,43 +57,27 @@ def generate_comments(submission_id):
 def init_db():
     conn = db.create_connection(r"./corpus.db")
     db.create_table(conn)
+    return conn
 
 
 def main():
-    init_log()
+    #init_log()
     gen = generate_submissions()
-    init_db()
-    
-    # we want..
-    # i.author
-    # i.created_utc
-    # i.title
-    # i.selftext (if exists)
-    # i.id
-    # i.is_self
-    # i.retrieved_on
-    # i.num_comments
-    # i.permalink
-    
-    for i in list(gen):
-        try: 
-            submission = (i.author, i.created_utc, i.title, i.selftext, i.id, 
-                    i.is_self, i.retrieved_on, i.num_comments, i.permalink)
-            db.insert(conn, submission)
-        except:
-            continue
+    conn = init_db()
 
-        print("_AUTHOR: " + i.author)
-        print("_ID: " + i.id)
-        print("_TIME: " + utc_to_local(i.created_utc))
-        print("_TITLE: " + i.title)
-        try: print("_TEXT: " + i.selftext + "\n")
-        except:
-            continue
-        #print("_TOP_LEVEL_COMMENTS: ") 
-        #print(generate_comments(i.id))
-        print("###\n")
-        
+    for i in list(gen):
+        # only get submission that are self posts
+        if hasattr(i, 'selftext'):
+            if hasattr(i, 'author'):
+                submission = (i.author, utc_to_local(i.created_utc), i.title,
+                        i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
+                        i.num_comments, i.permalink)
+            else:
+                submission = ('deleted', utc_to_local(i.created_utc), i.title,
+                        i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
+                        i.num_comments, i.permalink)
+            db.insert(conn, submission)
+            print(utc_to_local(i.created_utc))
 
 
 if __name__ == "__main__":
