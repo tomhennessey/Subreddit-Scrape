@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import praw
+from praw.models import MoreComments
 from psaw import PushshiftAPI
 import datetime as dt
 import logging
@@ -36,7 +37,7 @@ def utc_to_local(utc_dt):
     return dt.datetime.fromtimestamp(utc_dt).strftime('%Y-%m-%d %I:%M:%S%p')
 
 
-def epoch_generate(month_num, month_half):
+def epoch_generate(month_num, year):
     """
     Generates start and end epochs to be used in 
     generate_submissions_psaw()
@@ -57,6 +58,12 @@ def epoch_generate(month_num, month_half):
         A tuple containing a start and end date in linux utc format
     """
 
+    start_time = int(dt.datetime(year, month_num, 1).timestamp())
+    end_time = int(dt.datetime(year, month_num + 1, 1).timestamp())
+
+    return (start_time, end_time)
+
+"""
     if month_half == 1:
         start_epoch = int(dt.datetime(2020, month_num, 1).timestamp())
         end_epoch = int(dt.datetime(2020, month_num, 15).timestamp())
@@ -65,9 +72,10 @@ def epoch_generate(month_num, month_half):
         end_epoch = int(dt.datetime(2020, month_num + 1, 1).timestamp())
    
     return (start_epoch, end_epoch)
+    """
 
 
-def generate_submissions_psaw(month_num, month_half, subreddit):
+def generate_submissions_psaw(month_num, subreddit):
     """
     Gets submissions between start/end epochs for requested 
     subreddit
@@ -93,13 +101,12 @@ def generate_submissions_psaw(month_num, month_half, subreddit):
     # init api
     api = PushshiftAPI()
     
-    epoch_tuple = epoch_generate(month_num, month_half)
+    epoch_tuple = epoch_generate(month_num, 2020)
     start_epoch = epoch_tuple[0]
     end_epoch = epoch_tuple[1]
     
-    # Pushapi says they have 32888 submissions in this time period, 
-    # hence the limit
-    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit=subreddit, limit=100))
+
+    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit=subreddit, size=1000))
 
 
 def generate_comments(reddit, submission_id):
@@ -123,9 +130,7 @@ def generate_comments(reddit, submission_id):
     # get submission from praw via submission_id from psaw
     submission = reddit.submission(id=submission_id)
 
-    # should load all folded comments, but i'm afraid to use it too
-    # much with a large dataset as it uses a network request each
-    # call and might get us banned from reddit
+    # should load all folded comments
     return submission.comments
 
 
@@ -141,7 +146,7 @@ def praw_timer(reddit):
     """
 
     if reddit.auth.limits['remaining'] < 10:
-        print("Waiting for PRAW API limit to reset...")
+        print("Waiting for PRAW API limit to reset...", end="\r")
         time.sleep(4)
 
 
@@ -173,7 +178,22 @@ def get_args():
     Retrieve CLI arguments
     """
 
-    return getopt.getopt(sys.argv[1:], 'vh') 
+    return getopt.getopt(sys.argv[2:], 'vh') 
+
+def iterate_comments(reddit, submission, conn):
+    comments = generate_comments(reddit, submission.id)
+    praw_timer(reddit)
+    for ind, j in enumerate(list(comments)):
+        try:
+            comment = (str(j.author), str(utc_to_local(j.created_utc)), 
+                    str(j.id), str(j.body), str(submission.id))  
+            db.insert_comment(conn, comment)
+        except AttributeError as e:
+            print(e)
+            continue
+        print("PRAW requests remaining: ", end="") 
+        print(reddit.auth.limits['remaining'], end="\r")
+
 
 def main():
     opts, args = get_args()
@@ -185,42 +205,28 @@ def main():
     reddit = praw.Reddit("bot1")
     conn = init_db()
 
-    for month in range(1, 12):
-        for half in range (1, 3):
-            gen = generate_submissions_psaw(month, half, subreddit)
+    for month in range(1, 3):
+        gen = generate_submissions_psaw(month, subreddit)
 
-            for inx, i in enumerate(list(gen)):
-                # only get submission that are self posts
-                if hasattr(i, 'selftext'):
-                    if hasattr(i, 'author'):
-                        submission = (i.author, utc_to_local(i.created_utc), i.title,
-                                i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
-                                i.num_comments, i.permalink)
-                    else:
-                        submission = ('deleted', utc_to_local(i.created_utc), i.title,
-                                i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
-                                i.num_comments, i.permalink)
-                    db.insert_submission(conn, submission)
-                    
-                    if i.num_comments > 0:
-                        comments = generate_comments(reddit, i.id)
-                        praw_timer(reddit)
-                        for ind, j in enumerate(list(comments)):
-                            try:
-                                comment = (str(j.author), str(utc_to_local(j.created_utc)), 
-                                        str(j.id), str(j.body), str(i.id))  
-                                db.insert_comment(conn, comment)
-                            except AttributeError as e:
-                                print(e)
-                                continue
-                        clear_screen()
-                        print("PRAW requests remaining: ", end="") 
-                        print(reddit.auth.limits['remaining'])
-                        print("At submission index ", inx, end="")
-                        #print(inx)                        
-                        print(" of current month - ", end="")
-                        print(utc_to_local(i.created_utc))
+        for inx, i in enumerate(list(gen)):
+            # only get submission that are self posts
+            if hasattr(i, 'selftext'):
+                if hasattr(i, 'author'):
+                    submission = (i.author, utc_to_local(i.created_utc), i.title,
+                            i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
+                            i.num_comments, i.permalink)
+                else:
+                    submission = ('deleted', utc_to_local(i.created_utc), i.title,
+                            i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
+                            i.num_comments, i.permalink)
+                db.insert_submission(conn, submission)
+                
+                if i.num_comments > 0:
+                    iterate_comments(reddit, i, conn)
 
+            print(" | At submission index ", inx, end="")
+            print(" of current request - ", end="")
+            print(utc_to_local(i.created_utc), end="\r")
 
 
 if __name__ == "__main__":
