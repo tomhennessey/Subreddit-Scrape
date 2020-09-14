@@ -11,21 +11,52 @@ import getopt
 
 import db
 
-# initialize verbose logging
 def init_log():
+    """
+    Initiates a logger for psaw to be used with '-v' cli option. 
+    """
+
     handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
     logger = logging.getLogger('psaw')
     logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
 
-# convert unix timestamp to something readable for output
+
 def utc_to_local(utc_dt):
+    """
+    Converts unix utc time format to human readable form for output
+
+    Returns
+    -------
+    string
+        A date and time in string format
+    """
+
     return dt.datetime.fromtimestamp(utc_dt).strftime('%Y-%m-%d %I:%M:%S%p')
 
-# generate start and end epochs as the first and last
-# 15 days of each month
+
 def epoch_generate(month_num, month_half):
+    """
+    Generates start and end epochs to be used in 
+    generate_submissions_psaw()
+
+    Parameters
+    ----------
+    month_num : int
+        The month number (1-12) that is being requested in scrape
+
+    month_half: int
+        Half of the month (1-2) that corresponds to first or last
+        15 days
+
+
+    Returns
+    -------
+    tuple
+        A tuple containing a start and end date in linux utc format
+    """
+
     if month_half == 1:
         start_epoch = int(dt.datetime(2020, month_num, 1).timestamp())
         end_epoch = int(dt.datetime(2020, month_num, 15).timestamp())
@@ -35,10 +66,30 @@ def epoch_generate(month_num, month_half):
    
     return (start_epoch, end_epoch)
 
-# gets submissions between start/end epochs from 'teachers' subreddit
-# limit seems to top out at 3999 but you need to put a much larger number 
-# to get there
+
 def generate_submissions_psaw(month_num, month_half, subreddit):
+    """
+    Gets submissions between start/end epochs for requested 
+    subreddit
+
+    TODO: Figure out limit paging
+
+    Parameters
+    ----------
+    month_num: int
+        The month number to be passed to epoch_generate()
+    month_half: int
+        The month half to be passed to epoch_generate()
+    subreddit: string
+        The name of the subreddit to be scraped
+
+    Returns
+    -------
+    generator
+        A generator object that will be used to loop through 
+        submissions
+    """
+    
     # init api
     api = PushshiftAPI()
     
@@ -50,10 +101,24 @@ def generate_submissions_psaw(month_num, month_half, subreddit):
     # hence the limit
     return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit=subreddit, limit=100))
 
-# takes a generated psaw object to start praw api
-# matches submission id's from psaw to find associated comments 
-# with praw
+
 def generate_comments(reddit, submission_id):
+    """
+    Take a PRAW reddit object and finds comments for a given 
+    submissions_id
+
+    Parameters
+    ----------
+    reddit: praw.Reddit
+        A PRAW Reddit API instance
+    submission_id: int
+        The id of the subreddit submission whose comments we want
+
+    Returns
+    -------
+    submission.comments: praw.models.comment_forest.CommentForest 
+        A Reddit CommentForest that can be iterated through
+    """
 
     # get submission from praw via submission_id from psaw
     submission = reddit.submission(id=submission_id)
@@ -63,25 +128,51 @@ def generate_comments(reddit, submission_id):
     # call and might get us banned from reddit
     return submission.comments
 
-# timer to keep track of praw api requests
+
 def praw_timer(reddit):
+    """
+    A timer that counts down remaining PRAW Api requests and
+    shortly halts and retries when there are less than 10. 
+
+    Parameters
+    ----------
+    reddit: praw.Reddit
+        A PRAW Reddit API instance
+    """
+
     if reddit.auth.limits['remaining'] < 10:
         print("Waiting for PRAW API limit to reset...")
         time.sleep(4)
 
-# create submissions and ocmments tables in SQLite DB
+
 def init_db():
+    """
+    Creates a SQLite DB connection to put scraped content into
+
+    Returns
+    -------
+    conn: SQLite DB instance
+    """
+
     conn = db.create_connection(r"./corpus.db")
     db.create_table_submissions(conn)
     db.create_table_comments(conn)
     print("DB Init Success")
     return conn
 
-# clear terminal screen in windows or unix
 def clear_screen():
+    """
+    Clears the terminal screen depending on OS detected
+    """
+
     os.system('cls' if os.name == 'nt' else 'clear')
 
+
 def get_args():
+    """
+    Retrieve CLI arguments
+    """
+
     return getopt.getopt(sys.argv[1:], 'vh') 
 
 def main():
