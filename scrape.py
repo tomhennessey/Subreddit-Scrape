@@ -38,7 +38,7 @@ def epoch_generate(month_num, month_half):
 # gets submissions between start/end epochs from 'teachers' subreddit
 # limit seems to top out at 3999 but you need to put a much larger number 
 # to get there
-def generate_submissions_psaw(month_num, month_half):
+def generate_submissions_psaw(month_num, month_half, subreddit):
     # init api
     api = PushshiftAPI()
     
@@ -48,7 +48,7 @@ def generate_submissions_psaw(month_num, month_half):
     
     # Pushapi says they have 32888 submissions in this time period, 
     # hence the limit
-    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit='canonade', limit=100))
+    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit=subreddit, limit=100))
 
 # takes a generated psaw object to start praw api
 # matches submission id's from psaw to find associated comments 
@@ -86,6 +86,7 @@ def get_args():
 
 def main():
     opts, args = get_args()
+    subreddit = sys.argv[1]
     for opt, arg in opts:
         if opt in ['-v']:
             print("Verbose logging")
@@ -95,7 +96,7 @@ def main():
 
     for month in range(1, 12):
         for half in range (1, 3):
-            gen = generate_submissions_psaw(month, half)
+            gen = generate_submissions_psaw(month, half, subreddit)
 
             for inx, i in enumerate(list(gen)):
                 # only get submission that are self posts
