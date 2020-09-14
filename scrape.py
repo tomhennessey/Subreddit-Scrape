@@ -6,6 +6,8 @@ import datetime as dt
 import logging
 import time
 import os
+import sys
+import getopt
 
 import db
 
@@ -46,7 +48,7 @@ def generate_submissions_psaw(month_num, month_half):
     
     # Pushapi says they have 32888 submissions in this time period, 
     # hence the limit
-    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit='teachers', limit=40000))
+    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit='canonade', limit=100))
 
 # takes a generated psaw object to start praw api
 # matches submission id's from psaw to find associated comments 
@@ -63,7 +65,7 @@ def generate_comments(reddit, submission_id):
 
 # timer to keep track of praw api requests
 def praw_timer(reddit):
-    if reddit.auth.limits['remaining'] < 15:
+    if reddit.auth.limits['remaining'] < 10:
         print("Waiting for PRAW API limit to reset...")
         time.sleep(4)
 
@@ -79,12 +81,19 @@ def init_db():
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+def get_args():
+    return getopt.getopt(sys.argv[1:], 'vh') 
+
 def main():
-    #init_log()
+    opts, args = get_args()
+    for opt, arg in opts:
+        if opt in ['-v']:
+            print("Verbose logging")
+            init_log()
     reddit = praw.Reddit("bot1")
     conn = init_db()
 
-    for month in range(1, 10):
+    for month in range(1, 12):
         for half in range (1, 3):
             gen = generate_submissions_psaw(month, half)
 
@@ -115,9 +124,9 @@ def main():
                         clear_screen()
                         print("PRAW requests remaining: ", end="") 
                         print(reddit.auth.limits['remaining'])
-                        print("At submission index ", end="")
-                        print(inx)                        
-                        print(" of current month - ")
+                        print("At submission index ", inx, end="")
+                        #print(inx)                        
+                        print(" of current month - ", end="")
                         print(utc_to_local(i.created_utc))
 
 
