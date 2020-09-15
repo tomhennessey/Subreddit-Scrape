@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
+"""
+A simple subreddit scraper
+"""
 
-import praw
-from praw.models import MoreComments
-from psaw import PushshiftAPI
 import datetime as dt
 import logging
 import time
@@ -10,11 +10,14 @@ import os
 import sys
 import getopt
 
+import praw
+from psaw import PushshiftAPI
+
 import db
 
 def init_log():
     """
-    Initiates a logger for psaw to be used with '-v' cli option. 
+    Initiates a logger for psaw to be used with '-v' cli option.
     """
 
     handler = logging.StreamHandler()
@@ -39,7 +42,7 @@ def utc_to_local(utc_dt):
 
 def epoch_generate(month_num, year):
     """
-    Generates start and end epochs to be used in 
+    Generates start and end epochs to be used in
     generate_submissions_psaw()
 
     Parameters
@@ -63,24 +66,11 @@ def epoch_generate(month_num, year):
 
     return (start_time, end_time)
 
-"""
-    if month_half == 1:
-        start_epoch = int(dt.datetime(2020, month_num, 1).timestamp())
-        end_epoch = int(dt.datetime(2020, month_num, 15).timestamp())
-    else:
-        start_epoch = int(dt.datetime(2020, month_num, 15).timestamp())
-        end_epoch = int(dt.datetime(2020, month_num + 1, 1).timestamp())
-   
-    return (start_epoch, end_epoch)
-    """
-
 
 def generate_submissions_psaw(month_num, subreddit):
     """
-    Gets submissions between start/end epochs for requested 
+    Gets submissions between start/end epochs for requested
     subreddit
-
-    TODO: Figure out limit paging
 
     Parameters
     ----------
@@ -94,24 +84,24 @@ def generate_submissions_psaw(month_num, subreddit):
     Returns
     -------
     generator
-        A generator object that will be used to loop through 
+        A generator object that will be used to loop through
         submissions
     """
-    
+
     # init api
     api = PushshiftAPI()
-    
+
     epoch_tuple = epoch_generate(month_num, 2020)
     start_epoch = epoch_tuple[0]
     end_epoch = epoch_tuple[1]
-    
 
-    return(api.search_submissions(after=start_epoch, before=end_epoch, subreddit=subreddit, size=1000))
+    return api.search_submissions(after=start_epoch, before=end_epoch,
+                                  subreddit=subreddit, size=1000)
 
 
 def generate_comments(reddit, submission_id):
     """
-    Take a PRAW reddit object and finds comments for a given 
+    Take a PRAW reddit object and finds comments for a given
     submissions_id
 
     Parameters
@@ -123,7 +113,7 @@ def generate_comments(reddit, submission_id):
 
     Returns
     -------
-    submission.comments: praw.models.comment_forest.CommentForest 
+    submission.comments: praw.models.comment_forest.CommentForest
         A Reddit CommentForest that can be iterated through
     """
 
@@ -137,7 +127,7 @@ def generate_comments(reddit, submission_id):
 def praw_timer(reddit):
     """
     A timer that counts down remaining PRAW Api requests and
-    shortly halts and retries when there are less than 10. 
+    shortly halts and retries when there are less than 10.
 
     Parameters
     ----------
@@ -178,27 +168,34 @@ def get_args():
     Retrieve CLI arguments
     """
 
-    return getopt.getopt(sys.argv[2:], 'vh') 
+    return getopt.getopt(sys.argv[2:], 'vh')
 
 def iterate_comments(reddit, submission, conn):
+    """
+    TODO: Docstring
+    """
+
     comments = generate_comments(reddit, submission.id)
     praw_timer(reddit)
-    for ind, j in enumerate(list(comments)):
+    for j in list(comments):
         try:
-            comment = (str(j.author), str(utc_to_local(j.created_utc)), 
-                    str(j.id), str(j.body), str(submission.id))  
+            comment = (str(j.author), str(utc_to_local(j.created_utc)),
+                    str(j.id), str(j.body), str(submission.id))
             db.insert_comment(conn, comment)
-        except AttributeError as e:
-            print(e)
+        except AttributeError as err:
+            print(err)
             continue
-        print("PRAW requests remaining: ", end="") 
+        print("PRAW requests remaining: ", end="")
         print(reddit.auth.limits['remaining'], end="\r")
 
 
 def main():
-    opts, args = get_args()
+    """
+    TODO: Docstring
+    """
+    opts = get_args()
     subreddit = sys.argv[1]
-    for opt, arg in opts:
+    for opt in opts:
         if opt in ['-v']:
             print("Verbose logging")
             init_log()
@@ -220,7 +217,7 @@ def main():
                             i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
                             i.num_comments, i.permalink)
                 db.insert_submission(conn, submission)
-                
+
                 if i.num_comments > 0:
                     iterate_comments(reddit, i, conn)
 
