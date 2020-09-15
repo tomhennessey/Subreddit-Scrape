@@ -169,7 +169,7 @@ def get_args():
     Retrieve CLI arguments
     """
 
-    return getopt.getopt(sys.argv[2:], 'vh')
+    return getopt.getopt(sys.argv[2:], 'vhc')
 
 def iterate_comments(state, submission, conn):
     """
@@ -245,12 +245,16 @@ def main():
     TODO: Docstring
     """
 
-    opts = get_args()
+    opts, args = get_args()
     subreddit = sys.argv[1]
-    for opt in opts:
+    comment_flag = False
+    for opt, arg in opts:
         if opt in ['-v']:
             print("Verbose logging")
             init_log()
+        if opt in ['-c']:
+            comment_flag = True
+            print("Comments on ")
     conn = init_db()
     state = StateObj()
 
@@ -271,7 +275,8 @@ def main():
                             i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
                             i.num_comments, i.permalink)
                 db.insert_submission(conn, submission)
-                iterate_comments(state, i, conn)
+                if comment_flag:
+                    iterate_comments(state, i, conn)
 
 
             #print(" | At submission index ", inx, end="")
