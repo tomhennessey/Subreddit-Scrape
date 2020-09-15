@@ -4,7 +4,7 @@ A simple subreddit scraper. Able to scrape submissions and comments of a particu
 ## Dependencies
 * praw
 * psaw
-* python 3
+* python 3  
 Simply run   
 	`pip install -r requirements.txt`   
 to download python dependencies.   
@@ -15,6 +15,8 @@ You must have a praw.ini file in the base folder with client name "bot1" and str
 ## Usage
 Nix:   
 	`./scrape.py [subreddit] [output_file] [-cv]`  
+Windows:
+	`python[3] [subreddit] [output_file] [-cv]`
 Options:  
 * -c = comments on  
 * -v = verbose mode on  
