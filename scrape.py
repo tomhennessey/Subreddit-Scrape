@@ -155,6 +155,7 @@ def init_db():
     print("DB Init Success")
     return conn
 
+
 def clear_screen():
     """
     Clears the terminal screen depending on OS detected
@@ -170,13 +171,13 @@ def get_args():
 
     return getopt.getopt(sys.argv[2:], 'vh')
 
-def iterate_comments(reddit, submission, conn):
+def iterate_comments(state, submission, conn):
     """
     TODO: Docstring
     """
 
-    comments = generate_comments(reddit, submission.id)
-    praw_timer(reddit)
+    comments = generate_comments(state.reddit, submission.id)
+    praw_timer(state.reddit)
     for j in list(comments):
         try:
             comment = (str(j.author), str(utc_to_local(j.created_utc)),
@@ -185,27 +186,80 @@ def iterate_comments(reddit, submission, conn):
         except AttributeError as err:
             print(err)
             continue
-        print("PRAW requests remaining: ", end="")
-        print(reddit.auth.limits['remaining'], end="\r")
+        state.update_praw()
+        state.inc_comment()
+        #print("PRAW requests remaining: ", end="")
+        #print(reddit.auth.limits['remaining'], end="\r")
 
+
+def update_display(state_obj):
+    """
+    TODO: Docstring
+    """
+
+    if os.path.isfile(r"./corpus.db"):
+        filesize = (int(os.stat(r"./corpus.db").st_size)) / 1048576
+
+    output = ' PRAW Requests Remaining: {} '\
+             '|Submission Request #{} '\
+             '|Comment Request #{} ' \
+             '|Filesize {} MB'
+
+
+    print(output.format(state_obj.praw_requests,
+          state_obj.submission_idx, state_obj.comment_idx,
+          filesize), end="     \r", flush=True)
+
+class StateObj:
+    """
+    TODO: Docstring
+    """
+
+    reddit = []
+    submission_idx = 0
+    comment_idx = 0
+    praw_requests = 0
+    corpus_size = 0
+
+    def __init__(self):
+        self.submission_idx = 0
+        self.comment_idx = 0
+        self.praw_requests = 0
+        self.reddit = praw.Reddit("bot1")
+
+    def inc_sub(self):
+        # increment idx
+        self.submission_idx += 1
+
+    def reset_comment(self):
+        self.comment_idx = 0
+
+    def inc_comment(self):
+        self.comment_idx += 1
+
+    def update_praw(self):
+        self.praw_requests = self.reddit.auth.limits['remaining']
 
 def main():
     """
     TODO: Docstring
     """
+
     opts = get_args()
     subreddit = sys.argv[1]
     for opt in opts:
         if opt in ['-v']:
             print("Verbose logging")
             init_log()
-    reddit = praw.Reddit("bot1")
     conn = init_db()
+    state = StateObj()
 
-    for month in range(1, 3):
+    for month in range(1, 2):
         gen = generate_submissions_psaw(month, subreddit)
 
-        for inx, i in enumerate(list(gen)):
+        for i in list(gen):
+            state.inc_sub()
+            update_display(state)
             # only get submission that are self posts
             if hasattr(i, 'selftext'):
                 if hasattr(i, 'author'):
@@ -217,13 +271,12 @@ def main():
                             i.selftext, i.id, i.is_self, utc_to_local(i.retrieved_on),
                             i.num_comments, i.permalink)
                 db.insert_submission(conn, submission)
+                iterate_comments(state, i, conn)
 
-                if i.num_comments > 0:
-                    iterate_comments(reddit, i, conn)
 
-            print(" | At submission index ", inx, end="")
-            print(" of current request - ", end="")
-            print(utc_to_local(i.created_utc), end="\r")
+            #print(" | At submission index ", inx, end="")
+            #print(" of current request - ", end="")
+            #print(utc_to_local(i.created_utc), end="\r")
 
 
 if __name__ == "__main__":
