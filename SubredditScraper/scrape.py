@@ -172,7 +172,7 @@ def get_args():
     Retrieve CLI arguments
     """
 
-    return getopt.getopt(sys.argv[2:], 'vhc')
+    return getopt.getopt(sys.argv[1:], 'vc')
 
 def iterate_comments(state, submission, conn):
     """
@@ -201,8 +201,8 @@ def update_display(state_obj):
     """
 
     filesize = 0
-    if os.path.isfile(r"./corpus.db"):
-        filesize = (int(os.stat(r"./corpus.db").st_size)) / 1048576
+    if os.path.isfile(state_obj.db_name):
+        filesize = (int(os.stat(state_obj.db_name).st_size)) / 1048576
 
     output = ' PRAW Requests Remaining: {} '\
              '|Submission Request #{} '\
@@ -241,11 +241,14 @@ class StateObj:
     comment_idx = 0
     praw_requests = 0
     corpus_size = 0
+    db_name = "./corpus.db"
 
     def __init__(self):
         self.submission_idx = 0
         self.comment_idx = 0
         self.praw_requests = 0
+
+    def init_reddit(self):
         self.reddit = praw.Reddit("bot1")
 
     def inc_sub(self):
@@ -266,20 +269,30 @@ def main():
     TODO: Docstring
     """
 
-    if len(sys.argv) != 3:
+    if len(sys.argv) == 0:
         usage()
     opts, args = get_args()
     subreddit = sys.argv[1]
     comment_flag = False
-    for opt, arg in opts:
-        if opt in ['-v']:
+    for arg in args:
+        if arg == '-v':
             print("Verbose logging")
             init_log()
-        if opt in ['-c']:
+        if arg == '-c':
             comment_flag = True
             print("Comments on ")
-    conn = init_db(sys.argv[2])
+        if arg in [('-h'), ('-u')]:
+            usage()
+            exit()
     state = StateObj()
+    if comment_flag:
+        state.init_reddit()
+    for arg in args:
+        print(arg)
+        if ".db" in arg:
+            state.db_name = arg
+    conn = init_db(state.db_name)
+
 
     for month in range(1, 2):
         gen = generate_submissions_psaw(month, subreddit)
@@ -300,11 +313,6 @@ def main():
                 db.insert_submission(conn, submission)
                 if comment_flag:
                     iterate_comments(state, i, conn)
-
-
-            #print(" | At submission index ", inx, end="")
-            #print(" of current request - ", end="")
-            #print(utc_to_local(i.created_utc), end="\r")
 
 
 if __name__ == "__main__":
