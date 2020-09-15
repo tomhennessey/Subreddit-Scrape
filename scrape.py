@@ -140,7 +140,7 @@ def praw_timer(reddit):
         time.sleep(4)
 
 
-def init_db():
+def init_db(db_name):
     """
     Creates a SQLite DB connection to put scraped content into
 
@@ -149,7 +149,7 @@ def init_db():
     conn: SQLite DB instance
     """
 
-    conn = db.create_connection(r"./corpus.db")
+    conn = db.create_connection(db_name)
     db.create_table_submissions(conn)
     db.create_table_comments(conn)
     print("DB Init Success")
@@ -197,6 +197,7 @@ def update_display(state_obj):
     TODO: Docstring
     """
 
+    filesize = 0
     if os.path.isfile(r"./corpus.db"):
         filesize = (int(os.stat(r"./corpus.db").st_size)) / 1048576
 
@@ -209,6 +210,23 @@ def update_display(state_obj):
     print(output.format(state_obj.praw_requests,
           state_obj.submission_idx, state_obj.comment_idx,
           filesize), end="     \r", flush=True)
+
+def usage():
+    """
+    TODO: Docstring
+    """
+
+    if os.name == 'nt':
+        output = """Usage: python3 scrape.py [subreddit] [output file]
+        Options: -v: verbose logging
+                 -c: comments on"""
+    else:
+        output = """Usage: ./scrape.py [subreddit] [output file]
+        Options: -v: verbose logging
+                 -c: comments on"""
+
+    print(output)
+    exit()
 
 class StateObj:
     """
@@ -245,6 +263,8 @@ def main():
     TODO: Docstring
     """
 
+    if len(sys.argv) != 3:
+        usage()
     opts, args = get_args()
     subreddit = sys.argv[1]
     comment_flag = False
@@ -255,7 +275,7 @@ def main():
         if opt in ['-c']:
             comment_flag = True
             print("Comments on ")
-    conn = init_db()
+    conn = init_db(sys.argv[2])
     state = StateObj()
 
     for month in range(1, 2):
