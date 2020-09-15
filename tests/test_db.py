@@ -1,6 +1,6 @@
 import unittest
 
-import SubredditScrape
+import subredditscraper
 import os
 
 class TestDB(unittest.TestCase):

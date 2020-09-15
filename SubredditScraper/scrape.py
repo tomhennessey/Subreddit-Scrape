@@ -13,7 +13,10 @@ import getopt
 import praw
 from psaw import PushshiftAPI
 
-import db
+if __package__ == None:
+    import db
+else:
+    from . import db
 
 def init_log():
     """
