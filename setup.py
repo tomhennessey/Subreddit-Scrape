@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-        name="subreddit_scrape_tomhennessey",
+        name="subreddit_scraper_tomhennessey",
         version="0.0.1",
         author="Tom Hennessey",
         author_email="tomahennessey@gmail.com",
